@@ -84,9 +84,18 @@ public final class SerializingExecutor implements Executor, Runnable {
     if (running.compareAndSet(false, true)) {
       boolean success = false;
       try {
-        executor.execute(this);
+        if (executor instanceof ExecutorService) {
+          if (!((ExecutorService) executor).isShutdown()
+                  || !((ExecutorService) executor).isTerminated()) {
+            executor.execute(this);
+          } else {
+            executor.execute(this);
+          }
+        }
         success = true;
-      } finally {
+      } catch (RejectedExecutionException e) {
+			
+      }  finally {
         // It is possible that at this point that there are still tasks in
         // the queue, it would be nice to keep trying but the error may not
         // be recoverable.  So we update our state and propagate so that if
